@@ -2,7 +2,7 @@
 
 ---
 
-![image](../img/US_City_Map_API_tndsqa.png)
+![image](./img/US_City_Map_API_tndsqa.png)
 
 ---
 
