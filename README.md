@@ -26,15 +26,61 @@ This Node.js application serves as a backend service providing detailed informat
 ### Prerequisites
 - Node.js installed on your system.
 - PostgreSQL database set up and accessible.
+- Database connection has to also be established
+
+#### Postgres connection pattern
+A connection string for a PostgreSQL database typically follows this pattern:
+
+```
+postgres://USERNAME:PASSWORD@HOST:PORT/DATABASE_NAME
+```
+
+Here’s a breakdown of each component in the connection string:
+
+- **postgres://**: This is the scheme that indicates the database type (PostgreSQL in this case).
+- **USERNAME**: The username you use to access your PostgreSQL database.
+- **PASSWORD**: The password for the specified username.
+- **HOST**: The hostname where your PostgreSQL server is running. This could be `localhost` if the server is running on your local machine, or it could be an IP address or domain name for remote servers.
+- **PORT**: The port number on which your PostgreSQL server is listening. The default port for PostgreSQL is `5432`.
+- **DATABASE_NAME**: The name of the specific database you want to connect to.
+
+### Example
+Suppose you have the following database credentials:
+- Username: `user123`
+- Password: `securePassword`
+- Host: `db.example.com`
+- Port: `5432`
+- Database name: `mydatabase`
+
+Your connection string would look like this:
+```
+postgres://user123:securePassword@db.example.com:5432/mydatabase
+```
+
+### Usage in Node.js
+In a Node.js application, you might use this connection string with a library like `pg` to connect to your PostgreSQL database. It's common to store your connection string as an environment variable to keep your credentials secure. For example:
+
+```javascript
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL // Assuming DATABASE_URL is your environment variable
+});
+
+// Now you can use pool to query your database
+```
+
+### Security Note
+It's important to keep your database credentials secure. Do not hard-code them in your application's source code. Instead, use environment variables or a secure secrets management system to store them, especially if your codebase is version-controlled or shared with others.
 
 ### Installation
 1. Clone the repository to your local machine.
    ```
-   git clone <repository-url>
+   git clone https://github.com/ovokpus/us-city-api.git
    ```
 2. Navigate to the project directory.
    ```
-   cd <project-directory>
+   cd ./us-city-api
    ```
 3. Install the required npm packages.
    ```
