@@ -1,5 +1,7 @@
 # 🗺️ US City API
 
+<p align="center"><img src="docs/assets/hero.svg" alt="US City API" width="100%"/></p>
+
 **A small Express + PostgreSQL API for US cities, now with a one-command local stack and a React map UI.**
 
 `docker compose up` → PostgreSQL seeded with **3,122 real US cities** → Express API on `:3000` → React + Leaflet explorer on `:8080`.
@@ -13,6 +15,8 @@
 The original project ([docs/ORIGINAL_README.md](docs/ORIGINAL_README.md)) was an Express API over a hosted Postgres table of US cities. It had no seed data, no container setup, and no tests. Its "nearest city" lookup used flat Euclidean distance on lat/lng. This branch makes it run anywhere in one command and keeps the API it already had.
 
 ## 2. Architecture
+
+<p align="center"><img src="docs/assets/flow.svg" alt="US City API data flow" width="100%"/></p>
 
 ```mermaid
 flowchart LR
