@@ -86,7 +86,7 @@ export default function App() {
         </section>
         <section className="card">
           <h3>Time zones now <span className="hint">GET /time · local time · cities</span></h3>
-          <table><tbody>{zones.map(z => <tr key={z.name}><td>{z.name}</td><td className="num"><b>{z.time.slice(11, 16)}</b></td><td className="hint">UTC{z.utc_offset}</td><td className="num hint">{z.cities}</td></tr>)}</tbody></table>
+          <table><tbody>{zones.map(z => <tr key={z.name}><td title={z.name}>{z.name.replace(/^America\//, "").replace(/_/g, " ")}</td><td className="num"><b>{z.time.slice(11, 16)}</b></td><td className="hint">UTC{z.utc_offset}</td><td className="num hint">{z.cities}</td></tr>)}</tbody></table>
         </section>
       </div>
       <footer className="hint">City data © <a href="https://www.geonames.org">GeoNames</a>, CC BY 4.0. Map tiles © OpenStreetMap contributors.</footer>

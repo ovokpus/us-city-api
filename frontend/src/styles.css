@@ -31,3 +31,4 @@ th { color: #64748b; font-weight: 600 } tr.click { cursor: pointer } tr.click:ho
 .scroll { max-height: 540px; overflow: auto } .num { text-align: right; font-variant-numeric: tabular-nums }
 .nearest { font-size: 13px; padding: 6px 2px } footer { text-align: center } footer a { color: inherit }
 .bar { grid-template-columns: 110px 1fr 40px }
+.cols3 table td { white-space: nowrap } .cols3 .card { min-width: 0 }
