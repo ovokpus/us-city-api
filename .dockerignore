@@ -1,0 +1,10 @@
+.git
+node_modules
+coverage
+.env
+frontend
+legacy
+docs
+__tests__
+db
+scripts

@@ -1,0 +1,49 @@
+{
+  "/city?page_num=1&page_size=3": [
+    {
+      "id": 1671,
+      "city": "Aberdeen"
+    },
+    {
+      "id": 2898,
+      "city": "Aberdeen"
+    },
+    {
+      "id": 3005,
+      "city": "Aberdeen"
+    }
+  ],
+  "/city/find?lat=40.0&lng=-105.3": {
+    "city": {
+      "id": 302,
+      "name": "Boulder",
+      "state_id": "CO",
+      "lat": 40.01499,
+      "lng": -105.27055,
+      "population": 106803
+    },
+    "distance": 3.011601949599338,
+    "unit": "km"
+  },
+  "/state?page_num=1&page_size=3": [
+    {
+      "id": "AK",
+      "state": "Alaska"
+    },
+    {
+      "id": "AL",
+      "state": "Alabama"
+    },
+    {
+      "id": "AR",
+      "state": "Arkansas"
+    }
+  ],
+  "/health": {
+    "status": "ok",
+    "database": true,
+    "cities": 3122,
+    "states": 51,
+    "source": "GeoNames cities15000 (CC BY 4.0)"
+  }
+}

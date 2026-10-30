@@ -1,31 +1,28 @@
-const { pool } = require('../db'); // Ensure this path matches where you've configured your database connection
+const { pool } = require('../db');
+
+// Current wall-clock time in a zone, as an ISO string with the real UTC offset.
+// The original re-parsed toLocaleString() output as UTC, which produced a "Z" timestamp that
+// was really local time (and depends on the server's locale parsing).
+function zoneTime(zone, now = new Date()) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+        timeZone: zone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'longOffset',
+    }).formatToParts(now).map(p => [p.type, p.value]));
+    const offset = parts.timeZoneName === 'GMT' ? '+00:00' : parts.timeZoneName.replace('GMT', '');
+    return {
+        name: zone,
+        time: `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${offset}`,
+        utc_offset: offset,
+    };
+}
+exports.zoneTime = zoneTime;
 
 exports.getTimeZones = async (req, res) => {
     try {
-        // SQL query to select distinct time zones from the database
-        const query = 'SELECT DISTINCT timezone FROM uscitymapapi_us_cities_ovokpus';
-        const result = await pool.query(query);
-
-        // Extracting time zones from query result
-        const timeZones = result.rows.map(row => row.timezone);
-
-        const timeDefs = timeZones.map(zone => {
-            // Directly working with the specified timezone
-            const currentTime = new Date().toLocaleString('en-US', {
-                timeZone: zone,
-                hour12: false
-            });
-
-            // Convert the localized string back to a Date object in the specific timezone
-            const timeZoneDate = new Date(currentTime + " UTC");
-
-            return {
-                name: zone,
-                time: timeZoneDate.toISOString() // Format the Date object to ISO string
-            };
-        });
-
-        res.json(timeDefs);
+        const result = await pool.query(
+            'SELECT timezone, COUNT(*)::int AS cities FROM uscitymapapi_us_cities_ovokpus GROUP BY timezone ORDER BY cities DESC');
+        const now = new Date();
+        res.json(result.rows.map(row => ({ ...zoneTime(row.timezone, now), cities: row.cities })));
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
