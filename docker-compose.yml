@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cities}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cities}
+      POSTGRES_DB: ${POSTGRES_DB:-cities}
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # schema + COPY of the GeoNames CSV, first start only
+      - ./db/data:/seed:ro
+      - pg-data:/var/lib/postgresql/data
+    ports: ["${DB_PORT:-5432}:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      retries: 30
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-cities}:${POSTGRES_PASSWORD:-cities}@db:5432/${POSTGRES_DB:-cities}
+      PORT: 3000
+    ports: ["${API_PORT:-3000}:3000"]
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 5s
+      retries: 20
+
+  frontend:
+    build: ./frontend
+    ports: ["${FRONTEND_PORT:-8080}:80"]
+    depends_on:
+      api: {condition: service_healthy}
+
+volumes:
+  pg-data:

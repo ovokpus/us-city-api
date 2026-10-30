@@ -8,6 +8,9 @@ module.exports = {
     "node_modules",
     "vendor",
     "skillreactor",
+    "frontend",
+    "legacy",
+    "scripts",
     ".build",
     "coverage",
     "jest.config.js"

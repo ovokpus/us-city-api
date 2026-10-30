@@ -1,122 +1,104 @@
-# City and Timezone Information API
+# 🗺️ US City API
+
+**A small Express + PostgreSQL API for US cities, now with a one-command local stack and a React map UI.**
+
+`docker compose up` → PostgreSQL seeded with **3,122 real US cities** → Express API on `:3000` → React + Leaflet explorer on `:8080`.
+
+![Explorer: click the map to find the nearest city](docs/screenshots/01-explorer-nearest.png)
 
 ---
 
-![image](./img/US_City_Map_API_tndsqa.png)
+## 1. The problem
 
----
+The original project ([docs/ORIGINAL_README.md](docs/ORIGINAL_README.md)) was an Express API over a hosted Postgres table of US cities. It had no seed data, no container setup, and no tests. Its "nearest city" lookup used flat Euclidean distance on lat/lng. This branch makes it run anywhere in one command and keeps the API it already had.
 
-## Overview
-This Node.js application serves as a backend service providing detailed information on cities and timezones. Utilizing a PostgreSQL database, the API offers endpoints for retrieving city details, population distribution, and current times across different timezones. Designed with modularity and scalability in mind, this service caters to applications requiring geographical data and time synchronization features.
+## 2. Architecture
 
-## Features
-- **List Cities**: Retrieve information on cities, including names and IDs.
-- **Find Nearest City**: Given latitude and longitude coordinates, find the nearest city.
-- **City Population Distribution**: Get the distribution of cities based on population ranges.
-- **Timezone Information**: Fetch the current time across various global timezones.
-
-## Technologies
-- **Node.js**: For the runtime environment.
-- **Express**: Used to set up the server and API routes.
-- **PostgreSQL**: Acts as the primary database to store city and timezone data.
-- **pg**: A client library for interacting with PostgreSQL from Node.js.
-- **Intl**: For handling internationalization and timezone calculations.
-
-## Getting Started
-### Prerequisites
-- Node.js installed on your system.
-- PostgreSQL database set up and accessible.
-- Database connection has to also be established
-
-#### Postgres connection pattern
-A connection string for a PostgreSQL database typically follows this pattern:
-
-```
-postgres://USERNAME:PASSWORD@HOST:PORT/DATABASE_NAME
+```mermaid
+flowchart LR
+    U[Browser] -->|:8080| N[nginx<br/>React + Leaflet build]
+    N -->|/city /state /time /health| A[Express API<br/>:3000]
+    A -->|pg pool| P[(PostgreSQL 16<br/>uscitymapapi_us_cities_ovokpus)]
+    S[db/data/us_cities.csv<br/>GeoNames, CC BY 4.0] -->|COPY on first boot| P
+    U -.->|tiles| O[OpenStreetMap]
 ```
 
-Here’s a breakdown of each component in the connection string:
+## 3. Quick start
 
-- **postgres://**: This is the scheme that indicates the database type (PostgreSQL in this case).
-- **USERNAME**: The username you use to access your PostgreSQL database.
-- **PASSWORD**: The password for the specified username.
-- **HOST**: The hostname where your PostgreSQL server is running. This could be `localhost` if the server is running on your local machine, or it could be an IP address or domain name for remote servers.
-- **PORT**: The port number on which your PostgreSQL server is listening. The default port for PostgreSQL is `5432`.
-- **DATABASE_NAME**: The name of the specific database you want to connect to.
-
-### Example
-Suppose you have the following database credentials:
-- Username: `user123`
-- Password: `securePassword`
-- Host: `db.example.com`
-- Port: `5432`
-- Database name: `mydatabase`
-
-Your connection string would look like this:
-```
-postgres://user123:securePassword@db.example.com:5432/mydatabase
+```bash
+cp .env.example .env        # local-only defaults, no secrets
+docker compose up -d --build
+open http://localhost:8080  # UI
+curl localhost:3000/health  # {"status":"ok","database":true,"cities":3122,...}
+docker compose down         # add -v to drop the seeded volume
 ```
 
-### Usage in Node.js
-In a Node.js application, you might use this connection string with a library like `pg` to connect to your PostgreSQL database. It's common to store your connection string as an environment variable to keep your credentials secure. For example:
+Without Docker: `npm ci && npm test`. To run the API on its own, point `DATABASE_URL` at any Postgres and run `npm run dev`. For the UI, run `cd frontend && npm ci && npm run dev`; Vite proxies the API to `:3000`.
 
-```javascript
-const { Pool } = require('pg');
+## 4. API
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL // Assuming DATABASE_URL is your environment variable
-});
+| Endpoint | Status | What it returns |
+|---|---|---|
+| `GET /city?page_num=&page_size=` | original | `[{id, city}]` sorted by name (page_size capped at 1000) |
+| `GET /city/:id` | original | one city row |
+| `GET /city/find?lat=&lng=` | original, **fixed** | nearest city by **haversine km**; returns 400 on bad input |
+| `GET /city/population?bucket_size=` | original | cities grouped into population buckets |
+| `GET /state?page_num=&page_size=` / `?id=` | original | `[{id, state}]` |
+| `GET /time` | original, **fixed** | each time zone in the data with its correct local time and UTC offset |
+| `GET /city/search?q=&state_id=&min_population=&limit=` | new | prefix search, sorted by population |
+| `GET /state/stats` | new | cities, combined city population, and largest city per state |
+| `GET /health` | new | DB check and row counts (503 + `degraded` if the DB is down) |
 
-// Now you can use pool to query your database
+These are real responses from the running stack, saved in [docs/screenshots/api-samples.json](docs/screenshots/api-samples.json):
+
+```json
+GET /city/find?lat=40.0&lng=-105.3
+{ "city": { "id": 302, "name": "Boulder", "state_id": "CO", "lat": 40.01499, "lng": -105.27055, "population": 106803 },
+  "distance": 3.01, "unit": "km" }
 ```
 
-### Security Note
-It's important to keep your database credentials secure. Do not hard-code them in your application's source code. Instead, use environment variables or a secure secrets management system to store them, especially if your codebase is version-controlled or shared with others.
-
-### Installation
-1. Clone the repository to your local machine.
-   ```
-   git clone https://github.com/ovokpus/us-city-api.git
-   ```
-2. Navigate to the project directory.
-   ```
-   cd ./us-city-api
-   ```
-3. Install the required npm packages.
-   ```
-   npm install
-   ```
-4. Set up your environment variables in a `.env` file, including your database connection string.
-   ```
-   DATABASE_URL=<your-database-connection-string>
-   ```
-
-### Running the Application
-Start the server using npm:
-```
-npm start
+```mermaid
+sequenceDiagram
+    participant UI as React map
+    participant API as Express
+    participant DB as Postgres
+    UI->>API: click → GET /city/find?lat&lng
+    API->>DB: SELECT … ORDER BY haversine(lat,lng) LIMIT 1
+    DB-->>API: nearest row
+    API-->>UI: {city, distance, unit:"km"}
+    UI->>UI: draw red marker + line
 ```
 
-## API Endpoints
-| Endpoint                  | Description                                      |
-|---------------------------|--------------------------------------------------|
-| `GET /city`               | Lists all cities.                                |
-| `GET /city/find?lat=&lng=`| Finds the nearest city to the provided coordinates. |
-| `GET /state`              | Provides population distribution among states.   |
-| `GET /state?page_num=&page_size=`    | Provides population distribution among states with paginated results.   |
-| `GET /time`               | Lists current times across various timezones.    |
-| `GET /time`               | Lists current times across various timezones.    |
+## 5. The UI
 
-## Contributing
-Contributions to enhance the functionality or efficiency of this API are welcome. Please follow the standard fork-and-pull request workflow.
+| Search + filters | Explorer |
+|---|---|
+| ![search](docs/screenshots/02-search-california.png) | ![explorer](docs/screenshots/01-explorer-nearest.png) |
 
-## License
-This project is licensed under the [MIT License](LICENSE).
+- **Map:** circles are sized by population. Click anywhere to call `/city/find`.
+- **Filters:** search by name prefix, state, and minimum population (`/city/search`).
+- **State table:** click a row to filter by that state (`/state/stats`).
+- **Histogram:** log-scaled population buckets (`/city/population`).
+- **Clocks:** live local time for each time zone (`/time`).
 
-## Contact
-For any queries or further information, please reach out to [your-email@example.com].
+Both screenshots were taken with headless Playwright against the running stack (`scripts/screenshots.py`).
 
----
+## 6. Data
 
+`db/data/us_cities.csv` is built from **GeoNames `cities15000`** (populated places with ≥15k people), licensed CC BY 4.0. Source details and attribution are in [db/data/SOURCE.md](db/data/SOURCE.md), and `scripts/build_cities_csv.py` rebuilds the file. Postgres loads it once on first boot from `db/init/01_schema.sql`. GeoNames lists NYC's boroughs (Brooklyn, Queens, …) as separate places, so the data does too.
 
+## 7. What changed on this branch
 
+- **Containers:** `Dockerfile` (node 20 alpine, production deps only) and `docker-compose.yml` (Postgres with a healthcheck → API → nginx frontend).
+- **Data:** a real, attributed seed dataset plus a schema with indexes.
+- **Bug fixes:**
+  - The nearest-city lookup now uses haversine distance instead of Euclidean.
+  - `/time` now returns the correct time.
+  - The broken `nodemon --watch` start script now works.
+  - `PORT` defaults to 3000.
+  - Bad input to `/city/find` gets a 400.
+  - `page_size` is capped at 1000.
+- **New endpoints:** `/health`, `/city/search`, `/state/stats`. Removed the unused `moment-timezone` dependency.
+- **Tests:** Jest + supertest with a mocked pg pool (`__tests__/`). CI runs them, builds the frontend, then runs `docker compose build`.
+- **Moves, no deletes:** old README → `docs/ORIGINAL_README.md`, `img/` → `docs/img/`.
+- **Config:** `.env.example` holds local defaults only. There is no auth, because this is a local demo.
