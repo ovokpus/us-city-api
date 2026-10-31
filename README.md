@@ -1,5 +1,7 @@
 # 🗺️ US City API
 
+<p align="center"><img src="assets/banner.jpg" alt="Dark relief map of the United States dotted with glowing green city lights, with a brass divider and a stack of coins" width="100%"></p>
+
 <p align="center"><img src="docs/assets/hero.svg" alt="US City API" width="100%"/></p>
 
 **A small Express + PostgreSQL API for US cities, now with a one-command local stack and a React map UI.**
