@@ -10,6 +10,10 @@
 
 ---
 
+## Business case
+
+Many apps need simple place lookups, such as the nearest city to a point or the cities in a state. This API serves them from open GeoNames data in Postgres, with correct great-circle distances, tests and Terraform for three clouds. It is useful plumbing in a market with many alternatives. [docs/BUSINESS_CASE.md](docs/BUSINESS_CASE.md) covers the use cases, an illustrative ROI model and the limits.
+
 ## 1. The problem
 
 The original project ([docs/ORIGINAL_README.md](docs/ORIGINAL_README.md)) was an Express API over a hosted Postgres table of US cities. It had no seed data, no container setup, and no tests. Its "nearest city" lookup used flat Euclidean distance on lat/lng. This branch makes it run anywhere in one command and keeps the API it already had.
